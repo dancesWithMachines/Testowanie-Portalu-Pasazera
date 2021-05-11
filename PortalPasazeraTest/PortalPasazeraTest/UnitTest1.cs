@@ -9,16 +9,6 @@ using System.Threading;
 
 namespace PortalPasazeraTest
 {
-    //Lista testów
-    //Sprawdziæ czy dzia³a przycisk zmiany kontrastu
-    //Sprawdziæ czy wyszukuje poci¹g z gdañska do sopotu na podstawie godziny odjazu, pierwszego czerwca o godzine 10:30
-    //Sprawdziæ czy wyszuka poci¹g z sopotu do pruszcza gdañskiego na podstawie godziny przyjazzdu
-    //Sprawdziæ czy jest jakiœ spóŸniony poci¹g z malborka do gdyni
-    //Sprawdziæ czy nie istnieje po³¹czenie bezpoœrednie Tczew-Koœcierzyna
-    //Sprawdziæ czy rozk³ad zmienia siê pomiêdzy pi¹tkiem a sobot¹
-
-
-
     public class Tests
     {
         IWebDriver driver;
@@ -38,7 +28,7 @@ namespace PortalPasazeraTest
             }
         }
 
-        public void wait(int seconds) //Próbowaliœmy unikaæ jak ognia, ale bez tego dziej¹ siê rzeczy niestworzone
+        public void Wait(int seconds) //Próbowaliœmy unikaæ jak ognia, ale bez tego dziej¹ siê rzeczy niestworzone
         {
             Thread.Sleep(seconds * 1000);
         }
@@ -80,7 +70,7 @@ namespace PortalPasazeraTest
 
             IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
             departureInput.Click();
-            departureInput.SendKeys("Gdañsk G³ówny");
+            departureInput.SendKeys("Gdañsk");
             IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
             arrivalInput.Click();
             arrivalInput.SendKeys("Sopot");
@@ -118,30 +108,30 @@ namespace PortalPasazeraTest
             IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
             departureInput.Click();
             departureInput.SendKeys("Gda");
-            wait(2);
+            Wait(2);
             IWebElement departutreList = driver.FindElement(By.Id("departureFrom_listbox"));
             IList<IWebElement> departureListElements = departutreList.FindElements(By.TagName("li"));
             foreach (IWebElement element in departureListElements)
                 if (element.Text.Contains("Gdañsk G³ówny"))
                     element.Click();
-            wait(2);
+            Wait(2);
             IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
             arrivalInput.Click();
             arrivalInput.SendKeys("Sop");
-            wait(2);
+            Wait(2);
             IWebElement arrivalList = driver.FindElement(By.Id("arrivalTo_listbox"));
             IList<IWebElement> arrivalListElements = arrivalList.FindElements(By.TagName("li"));
             foreach (IWebElement element in arrivalListElements)
                 if (element.Text.Contains("Sopot"))
                     element.Click();
-            wait(2);
+            Wait(2);
             IWebElement date = driver.FindElement(By.Id("main-search__dateStart"));
             date.Click();
-            wait(2);
+            Wait(2);
             IWebElement dateAndYear = driver.FindElement(By.ClassName("k-nav-fast"));
             while (!dateAndYear.Text.Contains("LIPIEC 2021"))
                 driver.FindElement(By.ClassName("k-nav-next")).Click();
-            wait(2);
+            Wait(2);
             IWebElement calendar = driver.FindElement(By.ClassName("k-calendar"));
             IWebElement table = calendar.FindElement(By.TagName("tbody"));
             IList <IWebElement> days = table.FindElements(By.TagName("a"));
@@ -151,16 +141,16 @@ namespace PortalPasazeraTest
                     day.Click();
                     break;
                 }                    
-            wait(2);
+            Wait(2);
             IWebElement timePicker = driver.FindElement(By.Id("main-search__timeStart"));
             timePicker.Click();
-            wait(2);
+            Wait(2);
             IWebElement picker = driver.FindElement(By.ClassName("phTimePickerHoursList"));
             IList<IWebElement> times = picker.FindElements(By.TagName("div"));
             foreach (IWebElement time in times)
                 if (time.Text.Contains("15:00"))
                     time.Click();
-            wait(2);
+            Wait(2);
             driver.FindElement(By.ClassName("btn-start-search")).Click();
             IWebElement searchResults;
             while (true)
@@ -174,5 +164,212 @@ namespace PortalPasazeraTest
             Assert.Greater(listOfResults.Count, 0);
 
         }
+
+        [Test]
+        [Description("SprawdŸ czy zostan¹ wyszukane jakiekolwiek poci¹gi, z Tczewa do Koœcierzyny, z po³¹czeniem bezpoœrednim")]
+        public void TestForLackOfResults()
+        {
+            IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
+            departureInput.Click();
+            departureInput.SendKeys("Tczew");
+            IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
+            arrivalInput.Click();
+            arrivalInput.SendKeys("Koœcierzyna");
+            IWebElement dateStartInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateStartInput.Click();
+            IWebElement dateInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateInput.Click();
+            dateInput.SendKeys(Keys.Control + "a");
+            dateInput.SendKeys(Keys.Delete);
+            dateInput.SendKeys("05.08.2021");
+            IWebElement timeInput = driver.FindElement(By.Id("main-search__timeStart"));
+            timeInput.Click();
+            timeInput.SendKeys(Keys.Control + "a");
+            timeInput.SendKeys(Keys.Delete);
+            timeInput.SendKeys("18:30");
+            driver.FindElement(By.ClassName("btn-start-search")).Click();
+            IWebElement searchResults;
+            while (true)
+                try
+                {
+                    searchResults = driver.FindElement(By.ClassName("search-results__container"));
+                    break;
+                }
+                catch { }
+            IWebElement noResultsDiv = null;
+            try
+            {
+                noResultsDiv = driver.FindElement(By.ClassName("search-results-not-found"));
+            }
+            catch { }
+            Assert.IsNotNull(noResultsDiv);
+        }
+
+        [Test]
+        [Description("Sprawd¿ czy strona uniemo¿liwi wyszukiwanie gdy usuniemy wszystkie klasy transportu")]
+        public void TestForLackOfTransportClass()
+        {
+            IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
+            departureInput.Click();
+            departureInput.SendKeys("Gdynia G³ówna");
+            IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
+            arrivalInput.Click();
+            arrivalInput.SendKeys("Malbork");
+            IWebElement dateStartInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateStartInput.Click();
+            IWebElement dateInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateInput.Click();
+            dateInput.SendKeys(Keys.Control + "a");
+            dateInput.SendKeys(Keys.Delete);
+            dateInput.SendKeys("31.08.2021");
+            IWebElement timeInput = driver.FindElement(By.Id("main-search__timeStart"));
+            timeInput.Click();
+            timeInput.SendKeys(Keys.Control + "a");
+            timeInput.SendKeys(Keys.Delete);
+            timeInput.SendKeys("13:13");
+            IWebElement moreOptionsDiv = driver.FindElement(By.ClassName("main-search__more-options-trigger"));
+            moreOptionsDiv.FindElement(By.TagName("button")).Click();
+            IWebElement classList = driver.FindElement(By.Id("sl-klas"));
+            actions.MoveToElement(classList);
+            actions.Perform();
+            IList<IWebElement> classes = classList.FindElements(By.TagName("li"));
+            for (int i = classes.Count - 1; i >= 0; i--)
+            {
+                classes[i].FindElement(By.TagName("button")).Click();
+                classes = classList.FindElements(By.TagName("li"));
+            }               
+            driver.FindElement(By.ClassName("btn-start-search")).Click();
+            IWebElement errorMessage = null;
+            try
+            {
+                errorMessage = driver.FindElement(By.ClassName("param-error"));
+            } 
+            catch { }
+            Assert.IsNotNull(errorMessage);
+
+        }
+
+        [Test]
+        [Description("Sprawd¿ czy mo¿na dostaæ siê z Tczewa do Gdañska, za poœrednikiem SKM")]
+        public void TestForSKMConnection()
+        {
+            IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
+            departureInput.Click();
+            departureInput.SendKeys("Tczew");
+            IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
+            arrivalInput.Click();
+            arrivalInput.SendKeys("Gdañsk G³ówny");
+            IWebElement dateStartInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateStartInput.Click();
+            IWebElement moreOptionsDiv = driver.FindElement(By.ClassName("main-search__more-options-trigger"));
+            moreOptionsDiv.FindElement(By.TagName("button")).Click();
+            IWebElement classList = driver.FindElement(By.Id("sl-carr"));
+            actions.MoveToElement(classList);
+            actions.Perform();
+            IList<IWebElement> classes = classList.FindElements(By.TagName("li"));
+            for (int i = classes.Count - 1; i >= 0; i--)
+            {
+                if (!classes[i].FindElement(By.TagName("span")).Text.Contains("Szybka Kolej Miejska"))
+                    classes[i].FindElement(By.TagName("button")).Click();
+                classes = classList.FindElements(By.TagName("li"));
+            }
+            driver.FindElement(By.ClassName("btn-start-search")).Click();
+            IWebElement searchResults;
+            while (true)
+                try
+                {
+                    searchResults = driver.FindElement(By.ClassName("search-results__container"));
+                    break;
+                }
+                catch { }
+            IWebElement noResultsDiv = null;
+            try
+            {
+                noResultsDiv = driver.FindElement(By.ClassName("search-results-not-found"));
+            }
+            catch { }
+            Assert.IsNotNull(noResultsDiv);
+        }
+
+        [Test]
+        [Description("SprawdŸ czy pkp mo¿e siê nie spóŸniaæ")] //Je¿eli ten test nie przechodzi, to znaczy ¿e pkp tzyma poziom
+        public void TestPKP()
+        {
+            IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
+            departureInput.Click();
+            departureInput.SendKeys("Pruszcz Gdañski");
+            IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
+            arrivalInput.Click();
+            arrivalInput.SendKeys("Gdañsk");
+            driver.FindElement(By.ClassName("btn-start-search")).Click();
+            IWebElement searchResults;
+            while (true)
+                try
+                {
+                    searchResults = driver.FindElement(By.ClassName("search-results__container"));
+                    break;
+                }
+                catch { }
+            IWebElement searchResultContainer = driver.FindElement(By.ClassName("search-results__container"));
+            IList<IWebElement> results = searchResultContainer.FindElements(By.ClassName("search-results__item"));
+            bool wasLate = false;
+            foreach (IWebElement result in results)
+            {
+                IList<IWebElement> allerts = result.FindElements(By.ClassName("color--alert"));
+                if (allerts.Count > 0)
+                    wasLate = true;
+            }
+            Assert.IsFalse(wasLate,"Koleje polskie trzymaj¹ poziom hyhy");
+        }
+
+        [Test]
+        [Description("Po wyszukaniu, zmieñ parametry pozostawiaj¹c jako jednyego przewoŸnika Arrivê")]
+        public void TestChangingParameters()
+        {
+            IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
+            departureInput.Click();
+            departureInput.SendKeys("Tczew");
+            IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
+            arrivalInput.Click();
+            arrivalInput.SendKeys("Gdañsk G³ówny");
+            driver.FindElement(By.ClassName("btn-start-search")).Click();
+            IWebElement searchResults;
+            while (true)
+                try
+                {
+                    searchResults = driver.FindElement(By.ClassName("search-results__container"));
+                    break;
+                }
+                catch { }
+            IWebElement headerInfo = driver.FindElement(By.ClassName("header-extra-info"));
+            headerInfo.FindElement(By.TagName("button")).Click();
+            IWebElement company = driver.FindElement(By.ClassName("company-summary"));
+            company.FindElement(By.TagName("button")).Click();
+            IWebElement searchOptionCompany = driver.FindElement(By.Id("searchOptionsCompany"));
+            IList<IWebElement> companylabels = searchOptionCompany.FindElements(By.TagName("label"));
+            foreach (IWebElement label in companylabels)
+                if (!label.FindElement(By.TagName("span")).Text.Contains("Arriva") && !label.FindElement(By.TagName("span")).Text.Contains("wszyscy"))
+                    label.FindElement(By.TagName("span")).Click();
+            searchOptionCompany.FindElement(By.ClassName("options-submit")).Click();
+            searchResults = null;
+            while (true)
+                try
+                {
+                    searchResults = driver.FindElement(By.ClassName("search-results__container"));
+                    break;
+                }
+                catch { }
+            IWebElement noResultsDiv = null;
+            try
+            {
+                noResultsDiv = driver.FindElement(By.ClassName("search-results-not-found"));
+            }
+            catch { }
+            Assert.IsNotNull(noResultsDiv);
+        }
+
+        [Test]
+        [Description("Testowanie opcji szybkie po³¹czenia, dodaj¹c 3 stacje")]
+
     }
 }
