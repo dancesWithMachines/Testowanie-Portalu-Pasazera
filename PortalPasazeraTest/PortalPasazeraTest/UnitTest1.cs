@@ -369,7 +369,145 @@ namespace PortalPasazeraTest
         }
 
         [Test]
-        [Description("Testowanie opcji szybkie po³¹czenia, dodaj¹c 3 stacje")]
+        [Description("Testowanie opcji szybkie po³¹czenia, dodaj¹c 3 stacje")]//Z uwagi na rodzaj funkcjonalnoœci, ten test przechodzi tylko w odpowiednie dni i godziny
+        public void TestFastSearchesWithThreeStops()
+        {
+            IWebElement dateInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateInput.Click();
+            dateInput.SendKeys(Keys.Control + "a");
+            dateInput.SendKeys(Keys.Delete);
+            dateInput.SendKeys("15.06.2021");
+            IWebElement timeInput = driver.FindElement(By.Id("main-search__timeStart"));
+            timeInput.Click();
+            timeInput.SendKeys(Keys.Control + "a");
+            timeInput.SendKeys(Keys.Delete);
+            timeInput.SendKeys("11:30");
+            string[] stations = {"Sopot", "Gdañsk G³ówny", "Pruszcz Gdañski", "Cieplewo"};
+            IWebElement fastSearchBar = driver.FindElement(By.ClassName("fast-searches-config-link"));
+            fastSearchBar.FindElement(By.TagName("button")).Click();
+            IWebElement fastSearchPanel = driver.FindElement(By.ClassName("fast-searches-panel"));
+            IWebElement addPanel = fastSearchPanel.FindElement(By.ClassName("add-panel"));
+            IList<IWebElement> searchPannelButtons;
+            IList<IWebElement> searchPannelItems;
+            IList<IWebElement> curentSearchItemInputs;
+            for (int i=0; i < stations.Length - 1; i++)
+            {
+                searchPannelButtons = addPanel.FindElements(By.TagName("button"));
+                searchPannelButtons[0].Click();
+                searchPannelItems = fastSearchPanel.FindElements(By.ClassName("fast-searches-panel__item"));
+                curentSearchItemInputs = searchPannelItems[i].FindElements(By.TagName("input"));
+                curentSearchItemInputs[0].Click();
+                curentSearchItemInputs[0].SendKeys(stations[i]);
+                curentSearchItemInputs[1].Click();
+                curentSearchItemInputs[1].SendKeys(stations[i+1]);
+            }
+            IList<IWebElement> submitButtonsOnPageXD = driver.FindElements(By.ClassName("options-submit"));
+            foreach (IWebElement button in submitButtonsOnPageXD)
+                if (button.Displayed)
+                    button.Click();        
+            IWebElement fastSearchResultsPanel = driver.FindElement(By.Id("fcPanels"));
+            Wait(1);
+            IList<IWebElement> fastSearchSubPanels = fastSearchResultsPanel.FindElements(By.ClassName("fast-searches-result-panel"));
+            while (true)
+            {
+                try
+                {
+                    fastSearchSubPanels[0].FindElement(By.ClassName("icon-spinner"));
+                } catch
+                {
+                    break;
+                }                
+            }
+            Assert.Multiple(() => {
+                Assert.Greater(fastSearchSubPanels[0].FindElements(By.ClassName("search-results__item")).Count, 0);
+                Assert.Greater(fastSearchSubPanels[1].FindElements(By.ClassName("search-results__item")).Count, 0);
+                Assert.Greater(fastSearchSubPanels[2].FindElements(By.ClassName("search-results__item")).Count, 0);
+            });
 
+        }
+
+        [Test]
+        [Description("SprawdŸ czy dzia³a udostêpnianie trasy mailem")]
+        public void testMailService()
+        {
+            string email = "";
+            string mainWindowId = driver.CurrentWindowHandle;
+            IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+            js.ExecuteScript("window.open(\"https://temp-mail.org/en/\")");
+            string[] tabIds = new string[2];
+            driver.WindowHandles.CopyTo(tabIds,0);
+            foreach (string tabId in tabIds)
+                if (tabId != mainWindowId)
+                    driver.SwitchTo().Window(tabId);
+            string newWindowId = driver.CurrentWindowHandle;
+            IWebElement emailInput;
+            while (true)
+            {
+                emailInput = driver.FindElement(By.Id("mail"));
+                if (emailInput.GetAttribute("value").Contains("@"))
+                {
+                    email = emailInput.GetAttribute("value");
+                    break;
+                }
+                    
+            }
+            driver.SwitchTo().Window(mainWindowId);
+            IWebElement departureInput = driver.FindElement(By.Id("departureFrom"));
+            departureInput.Click();
+            departureInput.SendKeys("Gdynia G³ówna");
+            IWebElement arrivalInput = driver.FindElement(By.Id("arrivalTo"));
+            arrivalInput.Click();
+            arrivalInput.SendKeys("Malbork");
+            IWebElement dateInput = driver.FindElement(By.Id("main-search__dateStart"));
+            dateInput.Click();
+            dateInput.SendKeys(Keys.Control + "a");
+            dateInput.SendKeys(Keys.Delete);
+            dateInput.SendKeys("12.08.2021");
+            IWebElement timeInput = driver.FindElement(By.Id("main-search__timeStart"));
+            timeInput.Click();
+            timeInput.SendKeys(Keys.Control + "a");
+            timeInput.SendKeys(Keys.Delete);
+            timeInput.SendKeys("12:00");
+            driver.FindElement(By.ClassName("btn-start-search")).Click();
+            IWebElement searchResults;
+            while (true)
+                try
+                {
+                    searchResults = driver.FindElement(By.ClassName("search-results__container"));
+                    break;
+                }
+                catch { }
+            IWebElement searchResultContainer = driver.FindElement(By.ClassName("search-results__container"));
+            IList<IWebElement> results = searchResultContainer.FindElements(By.ClassName("search-results__item"));
+            IList<IWebElement> aList = results[0].FindElements(By.TagName("a"));
+            foreach (IWebElement a in aList)
+                if (a.Text.Contains("Szczegó³y po³¹czenia"))
+                    a.Click();
+            IWebElement shareOptions = driver.FindElement(By.ClassName("share-options"));
+            shareOptions.FindElement(By.TagName("button")).Click();
+            shareOptions = driver.FindElement(By.ClassName("share-options"));
+            IList<IWebElement> shareButtons = shareOptions.FindElements(By.TagName("button"));
+            foreach (IWebElement button in shareButtons)
+                if (button.GetAttribute("title").Contains("Wyœlij link"))
+                    button.Click();
+            IWebElement emailAddress = driver.FindElement(By.Id("frm-email-do"));
+            emailAddress.Click();
+            emailAddress.SendKeys(email);
+            IWebElement thePoorestCapatchaIveEverSeen = driver.FindElement(By.Id("frm-emptyField"));
+            thePoorestCapatchaIveEverSeen.Click();
+            thePoorestCapatchaIveEverSeen.SendKeys(Keys.Control + "a");
+            thePoorestCapatchaIveEverSeen.SendKeys(Keys.Delete);
+            driver.FindElement(By.Id("btn-send-email")).Click();
+            driver.Close();
+            driver.SwitchTo().Window(newWindowId);
+            IWebElement inbox = driver.FindElement(By.ClassName("inbox-dataList")); ;
+            while (!inbox.Displayed) { }
+            IList<IWebElement> possibleSenders = inbox.FindElements(By.ClassName("inboxSenderEmail"));
+            string sender = ":-(";
+            foreach (IWebElement senderElement in possibleSenders)
+                if (senderElement.Displayed)
+                    sender = senderElement.GetAttribute("title");
+            Assert.AreEqual(sender, "Noreply@plk-sa.pl");
+        }
     }
 }
